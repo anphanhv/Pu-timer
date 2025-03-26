@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Unite Altaria Spawn</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: white;
+        }
+
+        .container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            z-index: 1;
+        }
+
+        .circle,
+        .pentagon {
+            position: absolute;
+        }
+
+        .circle {
+            width: 40px;
+            /* Tăng kích thước */
+            height: 40px;
+            /* Tăng kích thước */
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .pentagon {
+            width: 60px;
+            /* Tăng kích thước */
+            height: 60px;
+            /* Tăng kích thước */
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            display: none;
+
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 16px;
+            /* Điều chỉnh kích thước chữ */
+            color: white;
+            /* Màu chữ */
+            line-height: 60px;
+            /* Đảm bảo chữ nằm giữa theo chiều dọc */
+            font-weight: bold;
+        }
+
+        .faded {
+            opacity: 0.2;
+        }
+
+        .purple {
+            background-color: purple;
+        }
+
+        .orange {
+            background-color: orange;
+        }
+
+        .green {
+            background-color: green;
+        }
+
+        .arc {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .title {
+            font-size: 48px;
+            /* Kích thước lớn */
+            font-weight: bold;
+            color: #4CAF50;
+            /* Màu xanh lá cây đẹp */
+            margin-bottom: 20px;
+        }
+
+        .timer {
+            margin-top: 20px;
+            font-size: 48px;
+            /* Kích thước lớn hơn gấp đôi */
+            font-weight: bold;
+            color: #FF5722;
+            /* Màu cam đẹp */
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .circle:hover::after,
+        .pentagon:hover::after {
+            content: '✖';
+            position: absolute;
+            color: red;
+            font-size: 20px;
+            top: -10px;
+            left: -10px;
+        }
+
+        #action-list {
+            margin-top: 20px;
+            width: 300px;
+            height: 100px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            /* Đảm bảo xuống dòng đúng cách */
+        }
+
+        .note {
+            font-weight: bold;
+            /* Chữ in đậm */
+            font-size: 16px;
+            /* Cỡ font vừa phải */
+            color: #333;
+            /* Màu chữ (có thể thay đổi tùy ý) */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title">Altaria spawn simulation</div>
+    <div class="note">
+        1. Bấm "Bắt đầu" <br>
+        2. Bãi chim là hình ngũ giác, Trụ là hình tròn, Bấm vào đối tượng để ghi nhận sự đập vỡ trụ hoặc đánh sạch bầy chim Altaria.<br>
+        3. Nếu có sai sót trong thao tác, F5 sử dụng lại từ đầu.<br>
+        4. Simulation còn đang hạn chế về mặt hiển thị nếu chim chưa ăn xong (chưa bấm xóa ngũ giác) mà đã đập trụ khiến ngũ giác về trạng thái chờ, tuy nhiên vẫn ra thời điểm và vị trí của lần tiếp theo chính xác.<br>
+        5. Bấm skip nhiều quá so với mức tính toán thời gian sẽ gây ra lỗi hiển thị thời gian số âm. => F5 lại từ đầu 
+    </div>
+
+    <div class="timer" id="timer">10:00</div>
+    <div class="controls">
+        <button onclick="startTimer()">Bắt đầu</button>
+        <button onclick="skipTime(-30)">+30s</button>
+        <button onclick="skipTime(-15)">+15s</button>
+        <button onclick="skipTime(-2)">+2s</button>
+        <button onclick="skipTime(-1)">+1s</button>
+ 
+    </div>
+    <div class="container">
+        <div class="arc">
+            <div id="base-purple-0" data-alias="Trụ trung tâm đội Tím" class="circle purple"
+                style="top: 240px; left: 100px;"></div>
+            <div id="creep-purple-0" data-alias="Altaria trước trụ trung tâm đội Tím" class="pentagon purple faded"
+                style="top: 220px; left: 150px;"></div>
+            <div id="base-purple-1" data-alias="Trụ giữa đội Tím" class="circle purple"
+                style="top: 200px; left: 200px;"></div>
+            <div id="creep-purple-1" data-alias="Altaria trước trụ giữa đội Tím" class="pentagon purple faded"
+                style="top: 180px; left: 250px;"></div>
+            <div id="base-purple-2" data-alias="Trụ ngoài đội Tím" class="circle purple"
+                style="top: 160px; left: 300px;"></div>
+            <div id="creep-center" data-alias="Altaria trung tâm" class="pentagon green faded"
+                style="top: 140px; left: 400px;"></div>
+            <div id="base-orange-2" data-alias="Trụ ngoài đội Cam" class="circle orange"
+                style="top: 160px; left: 500px;"></div>
+            <div id="creep-orange-1" data-alias="Altaria trước trụ giữa đội Cam" class="pentagon orange faded"
+                style="top: 180px; left: 550px;"></div>
+            <div id="base-orange-1" data-alias="Trụ giữa đội Cam" class="circle orange"
+                style="top: 200px; left: 600px;"></div>
+            <div id="creep-orange-0" data-alias="Altaria trước trụ trung tâm đội Cam" class="pentagon orange faded"
+                style="top: 220px; left: 650px;"></div>
+            <div id="base-orange-0" data-alias="Trụ trung tâm đội Cam" class="circle orange"
+                style="top: 240px; left: 700px;"></div>
+        </div>
+    </div>
+    <div id="action-list"></div>
+
+
+
+    <script>
+        let timeLeft = 600;
+        let timerInterval;
+        let actions = [];
+        let creeps = []; // Danh sách các đối tượng creep
+
+
+        function updateTimerDisplay() {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    checkCreepSpawn();
+                } else {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        }
+
+        function skipTime(seconds) {
+            timeLeft = Math.max(0, Math.min(600, timeLeft + seconds));
+            updateTimerDisplay();
+            checkCreepSpawn();
+        }
+
+        function returnLastAction() {
+            if (actions.length > 0) {
+                let lastAction = actions.pop();
+
+                // Cập nhật thời gian
+                document.getElementById('timer').textContent = lastAction.time;
+
+                // Kiểm tra và làm cho base visible nếu nó đang bị ẩn
+                let baseElement = document.getElementById(lastAction.base);
+                if (baseElement.style.display === 'none') {
+                    baseElement.style.display = 'block';
+                }
+
+                // Cập nhật hộp văn bản với danh sách hành động
+                document.getElementById('action-list').textContent = actions.map(action => `${action.time} - ${action.base}`).join('\n');
+
+                // Log danh sách hành động (chỉ để kiểm tra)
+                console.log(actions);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.circle, .pentagon').forEach(element => {
+                element.addEventListener('click', function () {
+                    // Lấy thời gian hiện tại từ đồng hồ
+                    let currentTime = document.getElementById('timer').textContent;
+                    // Kiểm tra nếu là pentagon và có class faded thì không cho click
+                    if (this.classList.contains('pentagon') && this.classList.contains('faded')) {
+                        return; // Không cho phép click
+                    }
+
+                    // Xác thực theo chiều hướng ưu tiên
+                    if (this.id.includes('base-orange-1') || this.id.includes('base-purple-1')) {
+                        // Base giữa, kiểm tra base ngoài
+                        let outerBaseId = this.id.replace('-1', '-2');
+                        if (document.getElementById(outerBaseId).style.display !== 'none') {
+                            return; // Base ngoài chưa bị ẩn, không cho phép click
+                        }
+                    } else if (this.id.includes('base-orange-2') || this.id.includes('base-purple-2')) {
+
+                    } else if (this.id.includes('base-orange-0') || this.id.includes('base-purple-0')) {
+                        // Base trong, không bao giờ biến mất
+                        return;
+                    }
+
+                    // Thêm hành động vào danh sách
+                    actions.push({ time: currentTime, base: this.id, alias: this.dataset.alias });
+
+                    // Ẩn base hoặc pentagon
+                    this.style.display = 'none';
+
+                    // Cập nhật hộp văn bản với danh sách hành động
+                    document.getElementById('action-list').textContent = actions.map(action => `${action.time} - ${action.alias} - đã bị xóa`).join('\n');
+
+                    // Log danh sách hành động (chỉ để kiểm tra)
+                    console.log(actions);
+
+                    // Thiết lập timer cho creep mới nếu là pentagon hoặc base
+                    if (this.classList.contains('pentagon') || this.classList.contains('circle')) {
+
+                        let creepId = `${currentTime}${this.id}`;
+                        let nextSpawnTime = calculateNextSpawnTime(currentTime, this.id);
+                        let nextLocation = findElementId(this.id); // Sử dụng hàm findNextLocation để lấy vị trí từ id của pentagon hoặc base
+
+                        // Kiểm tra xem có creep nào đang đợi để đến thời gian hay không
+                        let existingCreep = creeps.find(creep => creep.nextTimer < currentTime);
+                        if (!existingCreep) {
+                            creeps.push({ id: creepId, nextTimer: nextSpawnTime, nextLocation: nextLocation, previousClear: currentTime, displayed: false });
+                            console.log(`Next spawn time for ${creepId}: ${nextSpawnTime}`);
+                            // Tìm DOM element tại nextLocation và áp dụng class faded
+                            let nextCreepElement = document.getElementById(nextLocation);
+                            if (nextCreepElement) {
+                                nextCreepElement.style.display = 'block';
+                                nextCreepElement.classList.add('faded');
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Thêm creep tiêu chuẩn vào danh sách khi trò chơi bắt đầu
+            creeps.push({ id: 'null8:50+center', nextTimer: '8:50', nextLocation: 'creep-center', previousClear: null, displayed: false });
+            // Tìm DOM element tại nextLocation và áp dụng class faded
+            let nextCreepElement = document.getElementById('creep-center');
+            if (nextCreepElement) {
+                nextCreepElement.style.display = 'block';
+                nextCreepElement.classList.add('faded');
+            }
+        });
+
+        function calculateNextSpawnTime(currentTime, currentLocation) {
+            // Các mốc tiêu chuẩn
+            const standardTimers = ['8:50', '7:20', '5:50', '4:20', '2:50', '1:20'];
+            const adjustedTimers = {
+                '+25': ['9:15', '7:45', '6:15', '4:45', '3:15', '1:45'],
+                '+10': ['9:00', '7:30', '6:00', '4:30', '3:00', '1:30']
+            };
+
+            // Lấy số lượng base hiện tại của hai bên team bằng cách xét xem số lượng ẩn hiện của đối tượng HTML
+            let purpleBases = Array.from(document.querySelectorAll('.circle.purple')).filter(base => base.style.display !== 'none').length;
+            let orangeBases = Array.from(document.querySelectorAll('.circle.orange')).filter(base => base.style.display !== 'none').length;
+
+            let nextSpawnTime;
+
+            if (purpleBases === orangeBases) {
+                // Nếu cả hai bên có cùng số lượng base nhưng đều mất 1 hoặc đều mất 2 thì mới cộng thêm 10 giây
+                if (purpleBases < 3 && orangeBases < 3) {
+                    nextSpawnTime = getNextAdjustedTime(currentTime, adjustedTimers['+10']);
+                } else {
+                    nextSpawnTime = getNextAdjustedTime(currentTime, standardTimers);
+                }
+            } else {
+                // Nếu một bên mất base, sử dụng mốc thời gian cộng thêm 25 giây
+                nextSpawnTime = getNextAdjustedTime(currentTime, adjustedTimers['+25']);
+            }
+
+            return nextSpawnTime;
+        }
+
+        function getNextAdjustedTime(currentTime, adjustedTimers) {
+            for (let i = 0; i < adjustedTimers.length; i++) {
+                if (currentTime > adjustedTimers[i]) {
+                    return adjustedTimers[i];
+                }
+            }
+            return adjustedTimers[adjustedTimers.length - 1]; // Trả về mốc thời gian cuối cùng nếu không tìm thấy mốc phù hợp
+        }
+
+        function checkCreepSpawn() {
+            let currentTime = document.getElementById('timer').textContent;
+            creeps.forEach(creep => {
+                if (creep.nextTimer === currentTime && !creep.displayed) {
+                    let creepElementId = `${creep.nextLocation}`; // Xác định vị trí của creep
+                    let creepElement = document.getElementById(creepElementId);
+                    if (creepElement) {
+                        creepElement.style.display = 'block';
+                        if (creepElement.classList.contains('faded')) {
+                            creepElement.classList.remove('faded'); // Gỡ bỏ class faded nếu có
+                        }
+                        creep.displayed = true; // Đánh dấu creep đã được hiển thị
+                    }
+                } else if (!creep.displayed) {
+                    let creepElementId = `${creep.nextLocation}`; // Xác định vị trí của creep
+                    let creepElement = document.getElementById(creepElementId);
+                    if (creepElement) {
+                        let timeDifference = calculateTimeDifference(currentTime, creep.nextTimer);
+                        creepElement.textContent = timeDifference; // Viết text vào DOM 
+                        creepElement.classList.add('faded'); // Áp dụng class faded
+                    }
+                }
+            });
+        }
+
+        function calculateTimeDifference(currentTime, nextTime) {
+            const [currentMinutes, currentSeconds] = currentTime.split(':').map(Number);
+            const [nextMinutes, nextSeconds] = nextTime.split(':').map(Number);
+
+            let totalCurrentSeconds = currentMinutes * 60 + currentSeconds;
+            let totalNextSeconds = nextMinutes * 60 + nextSeconds;
+
+            let difference = totalCurrentSeconds - totalNextSeconds;
+            let minutes = Math.floor(difference / 60);
+            let seconds = difference % 60;
+
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        function findNextLocation(id) {
+            // Lấy số lượng base hiện tại của hai bên team bằng cách xét xem số lượng ẩn hiện của đối tượng HTML
+            let purpleBases = Array.from(document.querySelectorAll('.circle.purple')).filter(base => base.style.display !== 'none').length;
+            let orangeBases = Array.from(document.querySelectorAll('.circle.orange')).filter(base => base.style.display !== 'none').length;
+            if (purpleBases === orangeBases) {
+                return 'center';
+            } else {
+
+            }
+        }
+
+
+        function findElementId(value) {
+            let purpleBases = Array.from(document.querySelectorAll('.circle.purple')).filter(base => base.style.display !== 'none').length;
+            let orangeBases = Array.from(document.querySelectorAll('.circle.orange')).filter(base => base.style.display !== 'none').length;
+            if (purpleBases === orangeBases) {
+                return 'creep-center';
+            } else if (orangeBases < purpleBases) {
+                let orangeBases = Array.from(document.querySelectorAll('.circle.orange')).filter(base => base.style.display !== 'none').length;
+                return 'creep-orange-' + (orangeBases - 1);
+            } else  {
+                let purpleBases = Array.from(document.querySelectorAll('.circle.purple')).filter(base => base.style.display !== 'none').length;
+                return 'creep-purple-' + (purpleBases - 1);
+            } 
+        }
+
+        updateTimerDisplay();
+    </script>
+</body>
+
+</html>
